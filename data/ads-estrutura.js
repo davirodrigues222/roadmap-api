@@ -92,6 +92,49 @@ const ADS_ESTRUTURA = [
         ]
       },
       {
+        id: 'tabelas-hash', name: 'tabelas de dispersão (hash)', estimatedHours: 6,
+        topicos: [
+          {
+            id: 'hash-conceito', title: 'tabelas de dispersão: conceito e funções hash', estimatedMinutes: 90,
+            difficulty: 'intermediario', tags: ['hash', 'estruturas', 'algoritmos'],
+            conteudo: {
+              resumo: 'Tabelas de dispersão (hash tables) armazenam pares chave-valor com acesso médio O(1). Uma função hash h(k) mapeia chaves para índices de um array chamados buckets.',
+              conceitos: ['Função hash h(k): mapeia chave k para índice do array', 'Bucket: posição no array que armazena um ou mais elementos', 'Fator de carga α = n/m: n elementos, m buckets — ideal α ≤ 0,75', 'Colisão: duas chaves distintas mapeadas para o mesmo bucket', 'TAD: Hash(), insere(k,v), remove(k), busca(k), tamanho(), contem(k), imprime()'],
+              explicacao: 'Método da divisão: h(k) = k mod m — m deve ser primo para melhor distribuição (ex: 11, 101, 1009). Método do dobramento: divide a chave em segmentos de d dígitos e soma ou aplica XOR entre eles. Método do quadrado do meio: eleva k ao quadrado e usa os dígitos centrais do resultado. Para strings, usa-se hash polinomial: h = Σ s[i] * base^i mod m (base 31 é comum).',
+              exemplos: [{ titulo: 'Métodos de função hash (divisão, dobramento, quadrado do meio, string)', codigo: `// Método da divisão — h(k) = k mod m  (m deve ser primo)\nfunction hashDivisao(k, m) {\n  return k % m;\n}\n\n// Método do dobramento — soma segmentos de 2 dígitos\nfunction hashDobramento(k, m) {\n  let soma = 0;\n  while (k > 0) {\n    soma += k % 100;\n    k = Math.floor(k / 100);\n  }\n  return soma % m;\n}\n\n// Método do quadrado do meio\nfunction hashQuadradoMeio(k, m) {\n  const quad = k * k;\n  const str = String(quad);\n  const meio = Math.floor(str.length / 2);\n  return parseInt(str.slice(meio - 1, meio + 1)) % m;\n}\n\n// Hash para strings — polinomial com base 31\nfunction hashString(s, m) {\n  let h = 0;\n  for (let i = 0; i < s.length; i++)\n    h = (h * 31 + s.charCodeAt(i)) % m;\n  return h;\n}\n\n// Exemplo com m = 11 (primo)\nconsole.log(hashDivisao(456, 11));     // 456 % 11 = 5\nconsole.log(hashDobramento(456, 11));  // (4 + 56) % 11 = 5\nconsole.log(hashString('ana', 11));    // hash de 'ana' mod 11`, linguagem: 'javascript' }],
+              errosComuns: ['m não primo no método da divisão cria clustering — chaves se agrupam em poucos buckets', 'Usar a chave diretamente como índice do array sem hash — memória proporcional ao maior valor da chave'],
+              dicas: ['Primos bons para m: 11, 101, 1009, 10007, 100003', 'Quando α > 0,75 faça rehash (recrie com m maior) para manter custo médio O(1)'],
+              links: [], projetosRelacionados: []
+            },
+            exercicios: {
+              fixacao: [{ id: 'hash-f1', enunciado: 'O que é o fator de carga α? Por que m deve ser primo no método da divisão?', tipo: 'dissertativo', gabarito: 'α = n/m (n elementos, m buckets). m primo reduz colisões porque distribui melhor — valores compostos criam padrões que concentram chaves em poucos buckets.' }],
+              intermediario: [{ id: 'hash-i1', enunciado: 'Implemente hashString(s, m) com hash polinomial de base 31. Teste com m=11 para as strings "ana", "bob", "carl", "davi".', tipo: 'codigo', linguagem: 'javascript' }],
+              desafio: [{ id: 'hash-d1', enunciado: 'Compare os três métodos (divisão, dobramento, quadrado do meio) para as chaves 123, 456, 789, 321, 654 com m=11. Qual distribui melhor (menos colisões)?', tipo: 'codigo', linguagem: 'javascript' }]
+            },
+            checklist: ['Entendo o que é uma tabela de dispersão e para que serve', 'Calculo h(k) pelos 3 métodos (divisão, dobramento, quadrado do meio)', 'Calculo o fator de carga α corretamente', 'Conheço o TAD tabela hash e suas operações']
+          },
+          {
+            id: 'hash-colisoes', title: 'tratamento de colisões', estimatedMinutes: 90,
+            difficulty: 'intermediario', tags: ['hash', 'colisão', 'encadeamento'],
+            conteudo: {
+              resumo: 'Colisões são inevitáveis quando n > m. Estratégias principais: encadeamento externo (lista por bucket), encadeamento interno com zona de colisão, encadeamento interno sem zona e endereçamento aberto (sondagem linear).',
+              conceitos: ['Encadeamento externo: cada bucket aponta para lista ligada de elementos', 'Encadeamento interno com zona: array dividido em zona-base (primeiras posições) + zona de colisão (posições extras)', 'Encadeamento interno sem zona: qualquer posição livre absorve a colisão via campo "próximo"', 'Endereçamento aberto (sondagem linear): ao colidir, tenta posição (i+1)%m', 'Rehashing: quando α excede limite, reconstrói tabela com novo m primo maior'],
+              explicacao: 'Encadeamento externo: cada posição guarda a cabeça de uma lista. Inserção sempre O(1) na cabeça. Com zona de colisão: a chave vai para a zona-base pelo hash; se ocupado, o novo elemento vai para a zona de colisão e é encadeado via campo "próximo". Sem zona de colisão: o overflow pode ir para qualquer posição livre do próprio array. Endereçamento aberto: não há listas — ao colidir, percorre sequencialmente até achar posição livre. Remoção exige marcação de "deletado" para não quebrar buscas.',
+              exemplos: [{ titulo: 'Tabela hash com encadeamento externo (TAD completo)', codigo: `class TabelaHash {\n  constructor(m = 11) {\n    this.m = m;\n    this.tabela = Array.from({ length: m }, () => []);\n    this.n = 0;\n  }\n\n  hash(chave) {\n    if (typeof chave === 'string') {\n      let h = 0;\n      for (const c of chave) h = (h * 31 + c.charCodeAt(0)) % this.m;\n      return h;\n    }\n    return chave % this.m;\n  }\n\n  insere(chave, valor) {\n    const i = this.hash(chave);\n    const bucket = this.tabela[i];\n    const existente = bucket.find(p => p[0] === chave);\n    if (existente) { existente[1] = valor; return; } // atualiza duplicata\n    bucket.push([chave, valor]);\n    this.n++;\n    if (this.n / this.m > 0.75) this._rehash();\n  }\n\n  busca(chave) {\n    const bucket = this.tabela[this.hash(chave)];\n    const par = bucket.find(p => p[0] === chave);\n    return par ? par[1] : null;\n  }\n\n  remove(chave) {\n    const i = this.hash(chave);\n    const idx = this.tabela[i].findIndex(p => p[0] === chave);\n    if (idx < 0) return false;\n    this.tabela[i].splice(idx, 1);\n    this.n--;\n    return true;\n  }\n\n  tamanho() { return this.n; }\n  contem(chave) { return this.busca(chave) !== null; }\n\n  imprime() {\n    this.tabela.forEach((bucket, i) => {\n      if (bucket.length > 0)\n        console.log('[' + i + ']: ' + bucket.map(p => p[0] + '->' + p[1]).join(' -> '));\n    });\n  }\n\n  _rehash() {\n    const antiga = this.tabela;\n    this.m = this.m * 2 + 1; // próximo valor ímpar (aproximação de primo)\n    this.tabela = Array.from({ length: this.m }, () => []);\n    this.n = 0;\n    for (const bucket of antiga)\n      for (const [k, v] of bucket) this.insere(k, v);\n  }\n}\n\nconst t = new TabelaHash();\nt.insere('ana', 25); t.insere('bob', 30); t.insere('carl', 22);\nconsole.log(t.busca('ana'));   // 25\nconsole.log(t.tamanho());     // 3\nconsole.log(t.contem('bob')); // true\nt.remove('bob');\nt.imprime();`, linguagem: 'javascript' }],
+              errosComuns: ['No endereçamento aberto, remover sem marcar como "deletado" quebra buscas de elementos inseridos após a posição removida', 'Não fazer rehash quando α cresce — a tabela degenera para O(n)'],
+              dicas: ['Encadeamento externo suporta α > 1 sem falhar (só degrada), mas usa mais memória', 'Endereçamento aberto é mais eficiente em cache mas exige α < 1 estritamente'],
+              links: [{ titulo: 'Visualgo — Hash Table', url: 'https://visualgo.net/pt/hashtable' }], projetosRelacionados: []
+            },
+            exercicios: {
+              fixacao: [{ id: 'hashc-f1', enunciado: 'Qual a diferença entre encadeamento externo e encadeamento interno com zona de colisão?', tipo: 'dissertativo', gabarito: 'Externo: cada bucket tem lista ligada fora do array principal. Interno com zona: array único, parte reservada (zona de colisão) para elementos que colidem, ligados via campo "próximo".' }],
+              intermediario: [{ id: 'hashc-i1', enunciado: 'Implemente tabela hash com sondagem linear: ao colidir, tente posição (i+1)%m. Implemente insere, busca e remove com marcação "DELETADO".', tipo: 'codigo', linguagem: 'javascript' }],
+              desafio: [{ id: 'hashc-d1', enunciado: 'Implemente encadeamento interno com zona de colisão: primeiras 2/3 posições = zona-base, últimas 1/3 = zona de colisão. Use campo "next" no registro para encadear colisões.', tipo: 'codigo', linguagem: 'javascript' }]
+            },
+            checklist: ['Entendo encadeamento externo e sei implementar', 'Entendo encadeamento interno com e sem zona de colisão', 'Implementei o TAD tabela hash completo com todos os métodos', 'Entendo rehashing e quando aplicar']
+          }
+        ]
+      },
+      {
         id: 'arvores-mod', name: 'árvores', estimatedHours: 8,
         topicos: [
           {
@@ -131,6 +174,25 @@ const ADS_ESTRUTURA = [
               desafio: [{ id: 'heap-d1', enunciado: 'Implemente o Heap Sort usando max-heap. Complexidade deve ser O(n log n).', tipo: 'codigo', linguagem: 'javascript' }]
             },
             checklist: ['Entendo a propriedade de heap', 'Implementei min-heap com array', 'Sei quando usar heap vs outros', 'Já resolvi problema de "k maiores" com heap']
+          },
+          {
+            id: 'avl-tree', title: 'árvore AVL (balanceamento automático)', estimatedMinutes: 90,
+            difficulty: 'avancado', tags: ['árvore', 'avl', 'balanceamento', 'rotações'],
+            conteudo: {
+              resumo: 'Árvore AVL é uma BST auto-balanceada. Para cada nó, o fator de balanço fb = Hd − He deve ser −1, 0 ou +1. Se fb sair desse intervalo após inserção ou remoção, uma rotação restaura o equilíbrio.',
+              conceitos: ['Fator de balanço: fb = Hd − He (altura subárvore direita − esquerda)', 'AVL válida: fb ∈ {−1, 0, +1} para todo nó', 'Rotação Simples Direita (RSD): fb < −1 e filho esquerdo tem fb ≤ 0 (caso LL)', 'Rotação Simples Esquerda (RSE): fb > +1 e filho direito tem fb ≥ 0 (caso RR)', 'Rotação Dupla Direita (RDD = RSE no filho esq + RSD): fb < −1 e filho esq tem fb > 0 (caso LR)', 'Rotação Dupla Esquerda (RDE = RSD no filho dir + RSE): fb > +1 e filho dir tem fb < 0 (caso RL)'],
+              explicacao: 'Após cada inserção, o caminho do novo nó até a raiz é percorrido de baixo para cima atualizando alturas. Ao detectar |fb| > 1, o fb do filho indica se é rotação simples (LL/RR) ou dupla (LR/RL). Rotação simples: um nó "sobe" e o outro "desce". Rotação dupla: duas rotações simples em sequência. AVL garante altura O(log n) mesmo para entradas ordenadas — diferente da BST que pode atingir O(n).',
+              exemplos: [{ titulo: 'AVL com rotações simples (RSD/RSE) e duplas (RDD/RDE)', codigo: `class NoAVL {\n  constructor(v) { this.v = v; this.esq = this.dir = null; this.h = 1; }\n}\n\nclass AVL {\n  _h(no)  { return no ? no.h : 0; }\n  _fb(no) { return no ? this._h(no.dir) - this._h(no.esq) : 0; }\n  _att(no){ no.h = 1 + Math.max(this._h(no.esq), this._h(no.dir)); }\n\n  _rsd(y) { // Rotação Simples Direita\n    const x = y.esq; y.esq = x.dir; x.dir = y;\n    this._att(y); this._att(x); return x;\n  }\n  _rse(y) { // Rotação Simples Esquerda\n    const x = y.dir; y.dir = x.esq; x.esq = y;\n    this._att(y); this._att(x); return x;\n  }\n\n  inserir(no, v) {\n    if (!no) return new NoAVL(v);\n    if (v < no.v)      no.esq = this.inserir(no.esq, v);\n    else if (v > no.v) no.dir = this.inserir(no.dir, v);\n    else return no; // duplicata ignorada\n    this._att(no);\n    const fb = this._fb(no);\n    // LL → RSD\n    if (fb < -1 && v < no.esq.v) return this._rsd(no);\n    // RR → RSE\n    if (fb >  1 && v > no.dir.v) return this._rse(no);\n    // LR → RSE no filho esq + RSD (RDD)\n    if (fb < -1 && v > no.esq.v) { no.esq = this._rse(no.esq); return this._rsd(no); }\n    // RL → RSD no filho dir + RSE (RDE)\n    if (fb >  1 && v < no.dir.v) { no.dir = this._rsd(no.dir); return this._rse(no); }\n    return no;\n  }\n}\n\nconst avl = new AVL();\nlet raiz = null;\n// Inserir 30,20,10 → fb(30)=-2, caso LL → RSD\n// Resultado: raiz=20, esq=10, dir=30\n[30, 20, 10, 25, 40].forEach(v => raiz = avl.inserir(raiz, v));`, linguagem: 'javascript' }],
+              errosComuns: ['Não atualizar a altura do nó ANTES de calcular o fb', 'Confundir os 4 casos — LL/RR são rotações simples, LR/RL são duplas (duas rotações)'],
+              dicas: ['Desenhe a árvore no papel antes de implementar — ajuda a visualizar qual nó sobe e desce', 'Rotação dupla RDD = (RSE no filho esquerdo) + (RSD na raiz)'],
+              links: [{ titulo: 'Visualgo — AVL Tree', url: 'https://visualgo.net/pt/bst' }], projetosRelacionados: []
+            },
+            exercicios: {
+              fixacao: [{ id: 'avl-f1', enunciado: 'Um nó tem subárvore direita de altura 3 e esquerda de altura 1. Qual o fb? A árvore está balanceada? Qual rotação aplicar?', tipo: 'dissertativo', gabarito: 'fb = 3 - 1 = 2. Não balanceada (|fb| > 1). Como fb > 1 e o filho direito cresce à direita (caso RR), aplica Rotação Simples Esquerda (RSE).' }],
+              intermediario: [{ id: 'avl-i1', enunciado: 'Insira os valores [10, 20, 30, 40, 50] em ordem em uma AVL vazia. Desenhe a árvore após cada inserção e identifique qual rotação foi aplicada em cada etapa.', tipo: 'dissertativo', linguagem: 'javascript' }],
+              desafio: [{ id: 'avl-d1', enunciado: 'Implemente a remoção em AVL: remova como em BST (sucessor in-order para nó com 2 filhos) e, ao retornar na recursão, atualize alturas e aplique rotações se necessário.', tipo: 'codigo', linguagem: 'javascript' }]
+            },
+            checklist: ['Entendo o fator de balanço fb = Hd − He', 'Sei identificar os 4 casos de desequilíbrio (LL, RR, LR, RL)', 'Implementei RSD e RSE corretamente', 'Entendo por que AVL garante O(log n) mesmo no pior caso']
           }
         ]
       },
